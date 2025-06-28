@@ -385,7 +385,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
 
         // try to decode on whole bytes
         if ((bits & 7) == 0) {
-          ESP_LOGD(TAG, "%02x", bytes[bits/8-1]);
+          //ESP_LOGD(TAG, "%02x", bytes[bits/8-1]);
           this->decode_fridge2_(bytes, bits / 8);
         }
 
@@ -400,7 +400,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
       syncs++;
       if (syncs == 8) dump(data);
     } else {
-      if (syncs > 2) ESP_LOGI(TAG, "de-sync after %u bits: %d, %d", bits, data.peek(), data.peek(1));
+      //if (syncs > 2) ESP_LOGI(TAG, "de-sync after %u bits: %d, %d", bits, data.peek(), data.peek(1));
       // reset state
       bits = 0;
       syncs = is_sync ? 1 : 0;
