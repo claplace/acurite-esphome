@@ -6,7 +6,7 @@
 namespace esphome {
 namespace acurite {
 
-static const char *const TAG = "acuurite";
+static const char *const TAG = "acurite+";
 
 // standard channel mapping for the majority of acurite devices
 static const char CHANNEL_LUT[4] = {'C', 'X', 'B', 'A'};
@@ -284,6 +284,42 @@ void AcuRiteComponent::decode_iris_(uint8_t *data, uint8_t len) {
   }
 }
 
+static dump(remote_base::RemoteReceiveData src) {
+  char buffer[256];
+  uint32_t buffer_offset = 0;
+  buffer_offset += sprintf(buffer, "Received Raw: ");
+
+  for (int32_t i = 0; i < src.size() - 1; i++) {
+    const int32_t value = src[i];
+    const uint32_t remaining_length = sizeof(buffer) - buffer_offset;
+    int written;
+
+    if (i + 1 < src.size() - 1) {
+      written = snprintf(buffer + buffer_offset, remaining_length, "%" PRId32 ", ", value);
+    } else {
+      written = snprintf(buffer + buffer_offset, remaining_length, "%" PRId32, value);
+    }
+
+    if (written < 0 || written >= int(remaining_length)) {
+      // write failed, flush...
+      buffer[buffer_offset] = '\0';
+      ESP_LOGI(TAG, "%s", buffer);
+      buffer_offset = 0;
+      written = sprintf(buffer, "  ");
+      if (i + 1 < src.size() - 1) {
+        written += sprintf(buffer + written, "%" PRId32 ", ", value);
+      } else {
+        written += sprintf(buffer + written, "%" PRId32, value);
+      }
+    }
+
+    buffer_offset += written;
+  }
+  if (buffer_offset != 0) {
+    ESP_LOGI(TAG, "%s", buffer);
+  }
+}
+
 bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
   uint8_t bytes[10] = {0};
   uint32_t bits = 0;
@@ -340,7 +376,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
                    (data.peek() < -1100 && data.peek() > -1900);
     bool is_zero = data.peek() > -700 && data.peek() < 0;
     bool is_one = data.peek() > -1100 && data.peek() < -700;
-    if ((is_one || is_zero) && syncs == 8) {
+    if ((is_one || is_zero) && syncs >= 8) {
       if (data.peek() > 0) {
         // detect bits using on state
         bytes[bits / 8] <<= 1;
@@ -349,7 +385,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
 
         // try to decode on whole bytes
         if ((bits & 7) == 0) {
-          ESP_LOGI(TAG, "%02x", bytes[bits/8-1]);
+          ESP_LOGD(TAG, "%02x", bytes[bits/8-1]);
           this->decode_fridge2_(bytes, bits / 8);
         }
 
@@ -362,7 +398,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     } else if (is_sync && bits == 0) {
       // count syncs
       syncs++;
-      if (syncs == 8) ESP_LOGI(TAG, "fridge2 synced");
+      if (syncs == 8) dump(data);
     } else {
       if (syncs > 2) ESP_LOGI(TAG, "de-sync %d, %d", data.peek(), data.peek(1));
       // reset state
