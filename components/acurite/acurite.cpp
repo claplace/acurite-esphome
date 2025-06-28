@@ -43,7 +43,7 @@ bool AcuRiteComponent::validate_(uint8_t *data, uint8_t len, int8_t except) {
 }
 
 void AcuRiteComponent::decode_fridge2_(uint8_t *data, uint8_t len) {
-  if (len == 6) {
+  if (len == 5) {
     char channel = CHANNEL_LUT[data[2] >> 6];
     uint16_t id = ((data[2] & 0x3F) << 8) | (data[1] & 0xFF);
     uint16_t battery = (data[3] >> 1) & 1;
@@ -52,7 +52,7 @@ void AcuRiteComponent::decode_fridge2_(uint8_t *data, uint8_t len) {
       temp_f = -temp_f;
     }
     float temp = (temp_f - 32) * 5.0f / 9.0f;
-    ESP_LOGI(TAG, "fridge2: %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5]);
+    ESP_LOGI(TAG, "fridge2: %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4]);
     ESP_LOGD(TAG, "Fridge/Freezer:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
     for (auto *device : this->devices_) {
       if (device->get_id() == id) {
@@ -403,7 +403,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
       if (syncs > 2) ESP_LOGI(TAG, "de-sync after %u bits: %d, %d", bits, data.peek(), data.peek(1));
       // reset state
       bits = 0;
-      syncs = 0;
+      syncs = is_sync ? 1 : 0;
     }
     data.advance();
   }
