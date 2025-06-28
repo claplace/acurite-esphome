@@ -284,7 +284,7 @@ void AcuRiteComponent::decode_iris_(uint8_t *data, uint8_t len) {
   }
 }
 
-static dump(remote_base::RemoteReceiveData src) {
+static void dump(remote_base::RemoteReceiveData src) {
   char buffer[256];
   uint32_t buffer_offset = 0;
   buffer_offset += sprintf(buffer, "Received Raw: ");
