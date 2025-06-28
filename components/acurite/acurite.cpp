@@ -379,8 +379,8 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     if ((is_bit || data.peek() < 0) && syncs >= 8) {
       if (data.peek() < 0) {
         // detect bits using on state
-        bytes[bits / 8] <<= 1;
-        bytes[bits / 8] |= is_one ? 1 : 0;
+        bytes[bits / 8] >>= 1;
+        bytes[bits / 8] |= is_one ? 0x80 : 0;
         bits += 1;
 
         // try to decode on whole bytes
