@@ -6,7 +6,7 @@
 namespace esphome {
 namespace acurite {
 
-static const char *const TAG = "acurite";
+static const char *const TAG = "acuurite";
 
 // standard channel mapping for the majority of acurite devices
 static const char CHANNEL_LUT[4] = {'C', 'X', 'B', 'A'};
