@@ -311,7 +311,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     data.advance();
   }
 
-  data.reset()
+  data.reset();
   bits = 0;
   syncs = 0;
   while (data.is_valid()) {
