@@ -374,9 +374,14 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
   while (data.is_valid()) {
     bool is_sync = (data.peek() > 1100 && data.peek() < 1900) ||
                    (data.peek() < -1100 && data.peek() > -1900);
-    bool is_bit = data.peek() > 0 && data.peek() < 300;
-    bool is_one = data.peek() < -700;
-    if ((is_bit || data.peek() < 0) && syncs >= 8) {
+    bool is_mark = data.peek() > 0 && data.peek() < 300;
+    bool is_one = data.peek() > -1100 && data.peek() < -700;
+    if (is_sync) {
+      // count syncs
+      syncs++;
+      bits = 0;
+      if (syncs == 8) dump(data);
+    } else if ((is_mark || data.peek() < 0) && syncs >= 4) {
       if (data.peek() < 0) {
         // detect bits using on state
         bytes[bits / 8] >>= 1;
@@ -391,19 +396,13 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
 
         // reset if buffer is full
         if (bits >= sizeof(bytes) * 8) {
-          bits = 0;
           syncs = 0;
         }
       }
-    } else if (is_sync && bits == 0) {
-      // count syncs
-      syncs++;
-      if (syncs == 8) dump(data);
     } else {
       //if (syncs > 2) ESP_LOGI(TAG, "de-sync after %u bits: %d, %d", bits, data.peek(), data.peek(1));
       // reset state
-      bits = 0;
-      syncs = is_sync ? 1 : 0;
+      syncs = 0;
     }
     data.advance();
   }
