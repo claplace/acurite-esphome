@@ -310,6 +310,24 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     }
     data.advance();
   }
+
+  data.reset()
+  bits = 0;
+  syncs = 0;
+  while (data.is_valid()) {
+    bool is_sync = (data.peek() > 1100 && data.peek() < 1900) ||
+                   (data.peek() < -1100 && data.peek() > -1900);
+    if (is_sync) {
+      // count syncs
+      syncs++;
+      ESP_LOGI(TAG, "peek %d is_sync %u syncs %u", data.peek(), is_sync, syncs);
+    } else {
+      // reset state
+      bits = 0;
+      syncs = 0;
+    }
+    data.advance();
+  }
   return true;
 }
 
