@@ -298,7 +298,6 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     bool is_zero = data.peek_mark(200) || data.peek_space(400);
     bool is_one = data.peek_mark(400) || data.peek_space(200);
     if ((is_one || is_zero) && syncs > 4) {
-      ESP_LOGD(TAG, "syncs %u", syncs);
       if (data.peek() > 0) {
         // detect bits using on state
         bytes[bits / 8] <<= 1;
