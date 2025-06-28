@@ -320,7 +320,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     if (is_sync) {
       // count syncs
       syncs++;
-      ESP_LOGI(TAG, "peek %d is_sync %u syncs %u", data.peek(), is_sync, syncs);
+      if (syncs > 2) ESP_LOGI(TAG, "sync peek %d syncs %u", data.peek(), syncs);
     } else {
       // reset state
       bits = 0;
