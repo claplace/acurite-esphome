@@ -42,6 +42,27 @@ bool AcuRiteComponent::validate_(uint8_t *data, uint8_t len, int8_t except) {
   return true;
 }
 
+void AcuRiteComponent::decode_fridge2_(uint8_t *data, uint8_t len) {
+  if (len == 6) {
+    char channel = CHANNEL_LUT[data[2] >> 6];
+    uint16_t id = ((data[2] & 0x3F) << 8) | (data[1] & 0xFF);
+    uint16_t battery = (data[3] >> 1) & 1;
+    int temp_f = data[0] & 0x7F;
+    if ((data[0] >> 7) & 1) {
+      temp_f = -temp_f;
+    }
+    float temp = (temp_f - 32) * 5.0f / 9.0f;
+    ESP_LOGI(TAG, "fridge2: %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5]);
+    ESP_LOGD(TAG, "Fridge/Freezer:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+    for (auto *device : this->devices_) {
+      if (device->get_id() == id) {
+        device->update_battery(battery);
+        device->update_temperature(temp);
+      }
+    }
+  }
+}
+
 void AcuRiteComponent::decode_fridge_(uint8_t *data, uint8_t len) {
   if (len == 6 && this->validate_(data, 6, -1)) {
     char channel = CHANNEL_LUT[data[0] >> 6];
@@ -317,11 +338,33 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
   while (data.is_valid()) {
     bool is_sync = (data.peek() > 1100 && data.peek() < 1900) ||
                    (data.peek() < -1100 && data.peek() > -1900);
-    if (is_sync) {
+    bool is_zero = data.peek() > -700 && data.peek() < 0;
+    bool is_one = !is_zero;
+    if ((is_one || is_zero) && syncs == 8) {
+      if (data.peek() > 0) {
+        // detect bits using on state
+        bytes[bits / 8] <<= 1;
+        bytes[bits / 8] |= is_one ? 1 : 0;
+        bits += 1;
+
+        // try to decode on whole bytes
+        if ((bits & 7) == 0) {
+          ESP_LOGI(TAG, "%02x", bytes[bits/8-1]);
+          this->decode_fridge2_(bytes, bits / 8);
+        }
+
+        // reset if buffer is full
+        if (bits >= sizeof(bytes) * 8) {
+          bits = 0;
+          syncs = 0;
+        }
+      }
+    } else if (is_sync && bits == 0) {
       // count syncs
       syncs++;
-      if (syncs > 2) ESP_LOGI(TAG, "sync peek %d syncs %u", data.peek(), syncs);
+      if (syncs == 8) ESP_LOGI(TAG, "fridge2 synced");
     } else {
+      if (syncs > 2) ESP_LOGI(TAG, "de-sync %d, %d", data.peek(), data.peek(1));
       // reset state
       bits = 0;
       syncs = 0;
