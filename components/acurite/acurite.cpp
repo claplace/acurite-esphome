@@ -339,7 +339,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     bool is_sync = (data.peek() > 1100 && data.peek() < 1900) ||
                    (data.peek() < -1100 && data.peek() > -1900);
     bool is_zero = data.peek() > -700 && data.peek() < 0;
-    bool is_one = !is_zero;
+    bool is_one = data.peek() > -1100 && data.peek() < -700;
     if ((is_one || is_zero) && syncs == 8) {
       if (data.peek() > 0) {
         // detect bits using on state
